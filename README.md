@@ -25,7 +25,7 @@ Smart Workplace OS is a modern, AI-powered workplace management platform that co
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 19, Vite, Tailwind CSS v4, Framer Motion |
-| Backend | Node.js, Express |
+| Backend | Spring |
 | Database | MongoDB with Mongoose |
 | Auth | JWT, bcrypt |
 | Real-time | Socket.IO |
@@ -47,7 +47,7 @@ smart-workplace-os/
 
 ### Prerequisites
 
-- Node.js 18+
+- Spring
 - MongoDB (local or Atlas)
 - npm or yarn
 
