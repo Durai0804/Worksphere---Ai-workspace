@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # ── PostgreSQL Database ─────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: workplace-os-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: workplace_os
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Spring Boot Backend ─────────────────────────────
+  backend:
+    build: .
+    container_name: workplace-os-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=workplace_os
+      - DB_USER=postgres
+      - DB_PASS=postgrespassword
+      - JWT_SECRET=c2VjdXJlLWp3dC1zZWNyZXQta2V5LWZvci13b3JrcGxhY2Utb3MtYXBwbGljYXRpb24tc2hvdWxkLWJlLWxvbmc=
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

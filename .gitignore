@@ -1,0 +1,17 @@
+node_modules/
+.env
+dist/
+build/
+target/
+*.log
+*.class
+*.jar
+.DS_Store
+.idea/
+*.iml
+uploads/profile-images/*
+uploads/resumes/*
+uploads/payslips/*
+!uploads/profile-images/.gitkeep
+!uploads/resumes/.gitkeep
+!uploads/payslips/.gitkeep

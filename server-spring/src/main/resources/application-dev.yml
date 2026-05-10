@@ -1,0 +1,14 @@
+# ═══════════════════════════════════════════════════════════
+# Development Profile
+# ═══════════════════════════════════════════════════════════
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    com.workplace.os: DEBUG
+    org.hibernate.SQL: DEBUG
