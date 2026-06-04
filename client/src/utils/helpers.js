@@ -30,3 +30,15 @@ export const getStatusColor = (status) => {
 
 export const DEPARTMENTS = ['Engineering', 'Design', 'Marketing', 'Finance', 'Human Resources', 'Management', 'Sales', 'Operations'];
 export const ROLES = ['admin', 'hr', 'employee'];
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+export const getImageUrl = (path) => {
+  if (!path || typeof path !== 'string') return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/')) {
+    const base = API_BASE.replace('/api', '');
+    return `${base}${path}`;
+  }
+  return path;
+};

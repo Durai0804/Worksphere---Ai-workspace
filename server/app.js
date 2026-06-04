@@ -19,32 +19,34 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 
+// ── Trust proxy (Render uses proxy for HTTPS) ───────────────
+app.set('trust proxy', 1);
+
 // ── Compression ────────────────────────────────────────────
 app.use(compression());
 
 // ── Security headers ───────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "blob:", "cdn.jsdelivr.net", "*"],
-      mediaSrc: ["'self'", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:"],
-      fontSrc: ["'self'", "fonts.googleapis.com", "fonts.gstatic.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
-    },
-  },
+  contentSecurityPolicy: false,
 }));
 
-// ── CORS ──────────────────────────────────────────────────
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
+// ── CORS (Vercel + Render ready) ──────────────────────────
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  const allowed = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',').map(s => s.trim());
+  if (allowed.includes(origin)) return true;
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname === 'localhost') return true;
+    if (hostname.endsWith('.vercel.app')) return true;
+    if (hostname.endsWith('.onrender.com')) return true;
+  } catch { /* invalid URL */ }
+  return false;
+};
+
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    callback(null, false);
-  },
+  origin: isAllowedOrigin,
   credentials: true,
 }));
 
@@ -81,15 +83,6 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime(),
   });
 });
-
-// ── Serve React production build ───────────────────────────
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, '..', 'client', 'dist');
-  app.use(express.static(clientDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-}
 
 // ── Error handler ─────────────────────────────────────────
 app.use(errorHandler);
