@@ -15,3 +15,7 @@ uploads/payslips/*
 !uploads/profile-images/.gitkeep
 !uploads/resumes/.gitkeep
 !uploads/payslips/.gitkeep
+logs/*.log
+!logs/.gitkeep
+server/.env
+client/.env

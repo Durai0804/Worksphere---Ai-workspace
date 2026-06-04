@@ -1,50 +1,64 @@
-// Global error handling middleware
-const errorHandler = (err, req, res, next) => {
-  let error = { ...err };
-  error.message = err.message;
+const logger = require('../config/logger');
 
-  // Log error for development
-  if (process.env.NODE_ENV === 'development') {
-    console.error('❌ Error:', err);
-  }
+const errorHandler = (err, req, res, next) => {
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
+
+  logger.error({
+    message: err.message,
+    stack: err.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+  });
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
-    error.message = 'Resource not found';
-    return res.status(404).json({ success: false, message: error.message });
+    message = 'Resource not found';
+    statusCode = 404;
   }
 
   // Mongoose duplicate key
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    error.message = `Duplicate value for field: ${field}`;
-    return res.status(400).json({ success: false, message: error.message });
+    message = `Duplicate value for field: ${field}`;
+    statusCode = 400;
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     const messages = Object.values(err.errors).map((val) => val.message);
-    error.message = messages.join(', ');
-    return res.status(400).json({ success: false, message: error.message });
+    message = messages.join(', ');
+    statusCode = 400;
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    return res.status(401).json({ success: false, message: 'Invalid token' });
+    message = 'Invalid token';
+    statusCode = 401;
   }
 
   if (err.name === 'TokenExpiredError') {
-    return res.status(401).json({ success: false, message: 'Token expired' });
+    message = 'Token expired';
+    statusCode = 401;
   }
 
   // Multer file size error
   if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ success: false, message: 'File too large. Maximum size is 5MB' });
+    message = 'File too large. Maximum size is 5MB';
+    statusCode = 400;
   }
 
-  res.status(err.statusCode || 500).json({
+  // Multer unexpected field
+  if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+    message = 'Unexpected file field';
+    statusCode = 400;
+  }
+
+  res.status(statusCode).json({
     success: false,
-    message: error.message || 'Internal Server Error',
+    message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };
 

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, Bell, Palette, Save } from 'lucide-react';
+import { User, Lock, Bell, Palette, Save, Upload, Camera } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile, updatePassword } from '../api/authApi';
 import { getInitials } from '../utils/helpers';
@@ -12,6 +12,76 @@ const SettingsPage = () => {
   const [profile, setProfile] = useState({ name: user?.name || '', phone: user?.phone || '', department: user?.department || '' });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [notifPref, setNotifPref] = useState(user?.notificationPreferences || { email: true, push: true, sms: false });
+
+  const [showWebcam, setShowWebcam] = useState(false);
+  const [webcamLoading, setWebcamLoading] = useState(false);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  const startWebcam = async () => {
+    setShowWebcam(true);
+    setWebcamLoading(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 320 } });
+      streamRef.current = stream;
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      }, 100);
+    } catch (err) {
+      toast.error('Could not access webcam. Please check permissions.');
+      setShowWebcam(false);
+    } finally {
+      setWebcamLoading(false);
+    }
+  };
+
+  const stopWebcam = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowWebcam(false);
+  };
+
+  const captureWebcam = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 320;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, 320, 320);
+    
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      await uploadAvatar(file);
+      stopWebcam();
+    }, 'image/jpeg', 0.9);
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      return toast.error('File size must be less than 2MB');
+    }
+    await uploadAvatar(file);
+  };
+
+  const uploadAvatar = async (file) => {
+    const loadingToast = toast.loading('Uploading profile picture...');
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    try {
+      const res = await updateProfile(formData);
+      updateUser(res.data.data);
+      toast.success('Profile picture updated successfully!', { id: loadingToast });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload profile picture', { id: loadingToast });
+    }
+  };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -58,16 +128,62 @@ const SettingsPage = () => {
           {tab === 'profile' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card p-6">
               <h3 className="text-lg font-semibold mb-6">Profile Information</h3>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center text-xl font-bold text-white">
-                  {getInitials(user?.name)}
+              
+              <div className="flex flex-col md:flex-row gap-6 items-start mb-8 pb-6 border-b border-[var(--color-border)]">
+                {/* Avatar Display */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-accent)] flex items-center justify-center text-2xl font-bold text-white overflow-hidden border border-[var(--color-border)]">
+                    {user?.avatar ? (
+                      <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      getInitials(user?.name)
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold">{user?.name}</p>
-                  <p className="text-sm text-[var(--color-text-muted)]">{user?.email}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] capitalize mt-0.5">Role: {user?.role}</p>
+
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <p className="text-lg font-semibold">{user?.name}</p>
+                    <p className="text-sm text-[var(--color-text-muted)]">{user?.email}</p>
+                    <p className="text-xs text-[var(--color-primary-light)] font-medium capitalize mt-1">Role: {user?.role}</p>
+                  </div>
+                  
+                  {/* Photo Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => document.getElementById('avatar-input').click()} className="btn-secondary text-xs py-1.5 px-3">
+                      <Upload className="w-3.5 h-3.5" /> Upload File
+                    </button>
+                    <button type="button" onClick={startWebcam} className="btn-secondary text-xs py-1.5 px-3">
+                      <Camera className="w-3.5 h-3.5" /> Use Webcam
+                    </button>
+                    <input id="avatar-input" type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  </div>
                 </div>
               </div>
+
+              {/* Webcam Box */}
+              {showWebcam && (
+                <div className="glass p-4 rounded-xl border border-[var(--color-primary)]/20 mb-6 flex flex-col items-center max-w-sm">
+                  <p className="text-xs text-[var(--color-text-muted)] mb-2">Align your face inside the camera view</p>
+                  <div className="relative w-64 h-64 bg-black rounded-xl overflow-hidden mb-3 border border-[var(--color-border)]">
+                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                    {webcamLoading && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                        <span className="text-xs text-[var(--color-text-muted)] animate-pulse">Camera starting...</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={captureWebcam} className="btn-primary text-xs py-1.5 px-3">
+                      Capture Photo
+                    </button>
+                    <button type="button" onClick={stopWebcam} className="btn-secondary text-xs py-1.5 px-3">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div><label className="text-xs text-[var(--color-text-muted)] mb-1 block">Full Name</label><input value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className="input-field" /></div>
                 <div><label className="text-xs text-[var(--color-text-muted)] mb-1 block">Phone</label><input value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className="input-field" /></div>
