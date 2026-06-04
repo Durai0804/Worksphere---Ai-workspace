@@ -14,7 +14,7 @@ Frontend (Vercel) ──HTTPS──→ Backend (Render) ──→ MongoDB (Atlas
 1. Go to https://www.mongodb.com/atlas → Create free cluster
 2. Create a database user (username + password)
 3. Under **Network Access** → Add IP: `0.0.0.0/0` (allow all — Render IPs change)
-4. Click **Connect** → Drivers → Copy connection string: `mongodb+srv://<user>:<pass>@cluster.xxxxx.mongodb.net/smart-workplace-os?retryWrites=true&w=majority`
+4. Click **Connect** → Drivers → Copy connection string: `mongodb+srv://chairmaduraipaids2023_db_user:<db_password>@worksphere.zfxfxch.mongodb.net/?appName=WorkSphere`
 
 ### Option B: Render MongoDB
 1. In Render dashboard → **New** → **MongoDB**
@@ -45,12 +45,13 @@ In Render dashboard → your service → **Environment** → **Add Environment V
 | Variable | Value |
 |----------|-------|
 | `NODE_ENV` | `production` |
-| `PORT` | `5000` |
 | `MONGODB_URI` | `mongodb+srv://<user>:<pass>@cluster.xxxxx.mongodb.net/smart-workplace-os?retryWrites=true&w=majority` |
 | `JWT_SECRET` | Generate a 64-char random string: `openssl rand -hex 32` or use an online generator |
 | `JWT_EXPIRE` | `7d` |
 | `CORS_ORIGIN` | `https://your-frontend.vercel.app` (replace with your actual Vercel URL) |
 | `AI_API_KEY` | *(optional — leave empty for now)* |
+
+> **Do NOT set `PORT`** — Render assigns a dynamic port automatically (e.g., `10000`). The server reads `process.env.PORT` and binds to `0.0.0.0`.
 
 ### Step 3: Deploy
 - Click **Deploy** → wait 2-3 minutes

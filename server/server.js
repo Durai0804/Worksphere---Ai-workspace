@@ -8,6 +8,7 @@ const { initSocket } = require('./config/socket');
 const logger = require('./config/logger');
 
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Validate required env vars
 const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET'];
@@ -44,8 +45,8 @@ const startServer = async () => {
     await connectDB();
     await seedDemoData();
 
-    server.listen(PORT, () => {
-      logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    server.listen(PORT, HOST, () => {
+      logger.info(`Server running in ${process.env.NODE_ENV} mode on ${HOST}:${PORT}`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
