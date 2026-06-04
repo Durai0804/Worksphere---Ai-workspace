@@ -9,13 +9,14 @@ target/
 .DS_Store
 .idea/
 *.iml
-uploads/profile-images/*
-uploads/resumes/*
-uploads/payslips/*
-!uploads/profile-images/.gitkeep
-!uploads/resumes/.gitkeep
-!uploads/payslips/.gitkeep
+server/uploads/profile-images/*
+server/uploads/resumes/*
+server/uploads/payslips/*
+!server/uploads/profile-images/.gitkeep
+!server/uploads/resumes/.gitkeep
+!server/uploads/payslips/.gitkeep
 logs/*.log
 !logs/.gitkeep
 server/.env
 client/.env
+database pasword
