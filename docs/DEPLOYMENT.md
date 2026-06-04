@@ -130,6 +130,19 @@ Then **Manual Deploy → Deploy** on Render.
 - The app auto-resolves relative image paths to absolute Render URLs
 - Ensure `VITE_API_URL` on Vercel matches your Render API URL
 
+### "No open HTTP ports detected" on Render
+This means the server started but crashed shortly after. Common causes:
+
+1. **Missing `NODE_ENV=production`** — Set this in Render env vars. Without it, the server may use development-only features that fail in Render's read-only filesystem.
+
+2. **File transport errors** — The logger gracefully falls back to console-only logging if the filesystem is not writable. If you see a crash, check the **Render Logs** tab for stack traces.
+
+3. **MongoDB connection timeout** — If `MONGODB_URI` is wrong or Atlas Network Access does not include `0.0.0.0/0`, the connection hangs and Render kills the process.
+
+4. **Memory limit** — Render free tier has 512 MB RAM. If the face-api model loading or other heavy operation exceeds this, the process is killed. Check Render dashboard for "OOM" (Out of Memory) notifications.
+
+5. **Fix**: Verify all env vars are set, then **Manual Deploy → Deploy** to restart cleanly.
+
 ---
 
 ## Quick Reference
